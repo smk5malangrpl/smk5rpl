@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        // Check the sessionStorage for the user's role
+        const userRole = sessionStorage.getItem('role');
+      
+        if (!userRole) {
+          // If no role is found, redirect to login page
+          window.location.href = 'login.html';
+        } else if (userRole === 'user') {
+          // If the role is 'user', redirect to materisiswa.html
+          window.location.href = 'materisiswa.html';
+        }
+        // If the role is 'admin', no action needed (stay on the page)
+        // Add event listener to the logout button 
+      </script>
+      
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firestore Table</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <style>
+        /* The modal's background */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+        }
+
+        /* Modal content */
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        /* Close button */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <img src="gambar/smk.jpg" alt="Logo" class="logo">
+        </div>
+        <a href="#">Nilai Siswa</a>
+        <a href="#inputNilai">Input Nilai</a>
+        <a href="#laporan">Chat</a>
+        <a href="#password">Ganti Password</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <h2>Nilai Siswa</h2>
+            <div class="user-info">
+                <span>Guru</span>
+                <button class="logout">Logout</button>
+            </div>
+        </div>
+
+        <!-- Dropdown for selecting class -->
+        <div class="container">
+            <form id="kelasForm">
+                <label for="kelasSelect">Pilih Kelas:</label>
+                <select id="kelasSelect" name="kelas">
+                    <option value="rpl1">RPL 1</option>
+                    <option value="rpl2">RPL 2</option>
+                    <option value="rpl3">RPL 3</option>
+                </select>
+            </form>
+        </div>
+
+        <!-- Table -->
+        <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+
+
+        <button id="openModalBtn">Add New Field</button>
+
+        <!-- Modal -->
+        <div id="myModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h1>Tambah Materi</h1>
+                <form id="addFieldForm">
+                    <select id="collectionSelect">
+                        <option value="rpl1">rpl1</option>
+                        <option value="rpl2" selected>rpl2</option>
+                        <option value="rpl3">rpl3</option>
+                    </select><br><br>
+                    <label for="fieldName">Field Name:</label>
+                    <input type="text" id="fieldName" required><br><br>
+
+                    <label for="fieldType">Field Type:</label>
+                    <select id="fieldType">
+                        <option value="string">String</option>
+                        <option value="number">Number</option>
+                    </select><br><br>
+
+                    <button type="submit">Add Field</button>
+                </form>
+            </div>
+        </div>
+        <!-- Input Form -->
+        <div id="inputForm">
+            <h3>Input Nilai</h3>
+            <form>
+                <label for="namaSiswaSelect">Pilih Siswa:</label>
+                <select id="namaSiswaSelect"></select>
+
+                <label for="materiSelect">Pilih Materi:</label>
+                <select id="materiSelect"></select>
+
+                <label for="nilaiInput">Nilai:</label>
+                <input type="number" id="nilaiInput" step="any">
+
+                <button type="button" id="saveButton">Simpan Nilai</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+
+        var modal = document.getElementById("myModal");
+        var openModalBtn = document.getElementById("openModalBtn");
+        var closeModalBtn = document.getElementsByClassName("close")[0];
+
+        // Open the modal
+        openModalBtn.onclick = function() {
+            modal.style.display = "block";
+        }
+
+        // Close the modal
+        closeModalBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, setDoc, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // Firebase configuration (your provided configuration)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCZyzRXHQfOI3EbaR4yfdj-04GXDO7JCz8",
+            authDomain: "smk5-799f7.firebaseapp.com",
+            projectId: "smk5-799f7",
+            storageBucket: "smk5-799f7.firebasestorage.app",
+            messagingSenderId: "239466826709",
+            appId: "1:239466826709:web:a9792827d66b307d33cb5c",
+            measurementId: "G-NG0VY1XL4B"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const tableHead = document.getElementById('tableHead');
+        const tableBody = document.getElementById('tableBody');
+        const kelasSelect = document.getElementById('kelasSelect');
+        const namaSiswaSelect = document.getElementById('namaSiswaSelect');
+        const materiSelect = document.getElementById('materiSelect');
+        const nilaiInput = document.getElementById('nilaiInput');
+        const saveButton = document.getElementById('saveButton');
+
+        kelasSelect.addEventListener('change', () => {
+            fetchKelasData(kelasSelect.value);
+        });
+
+        saveButton.addEventListener('click', async () => {
+            const selectedStudent = namaSiswaSelect.value;
+            const selectedMateri = materiSelect.value;
+            const nilai = parseFloat(nilaiInput.value);
+
+            if (!selectedStudent || !selectedMateri || isNaN(nilai)) {
+                alert("Please fill out all fields!");
+                return;
+            }
+
+            try {
+                const studentDocRef = doc(db, kelasSelect.value, selectedStudent);
+                const studentData = (await getDocs(collection(db, kelasSelect.value))).docs.find(doc => doc.id === selectedStudent)?.data() || {};
+                studentData[selectedMateri] = nilai;
+                await setDoc(studentDocRef, studentData);
+                alert("Nilai updated successfully!");
+                fetchKelasData(kelasSelect.value); // Refresh data
+            } catch (error) {
+                console.error("Error saving nilai: ", error);
+                alert("Error saving nilai: " + error.message);
+            }
+        });
+
+        async function fetchKelasData(kelas) {
+            try {
+                const querySnapshot = await getDocs(collection(db, kelas));
+
+                tableHead.innerHTML = '';
+                tableBody.innerHTML = '';
+                namaSiswaSelect.innerHTML = '';
+                materiSelect.innerHTML = '';
+
+                const fields = new Set();
+                const rows = [];
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+
+                    // Skip 'test' document but include 'setting' as hidden in table
+                    if (doc.id === 'test') return;
+
+                    const row = { id: doc.id, ...data };
+
+                    if (doc.id === 'setting') {
+                        row.hidden = true; // Mark 'setting' as hidden in table
+                    }
+
+                    Object.keys(data).forEach((field) => fields.add(field));
+                    rows.push(row);
+
+                    // Skip 'setting' document from being added to namaSiswaSelect
+                    if (doc.id !== 'setting') {
+                        const option = document.createElement("option");
+                        option.value = doc.id;
+                        option.textContent = data.nama || `Unknown (${doc.id})`;
+                        namaSiswaSelect.appendChild(option);
+                    }
+                });
+
+                // Sort rows by "absen"
+                rows.sort((a, b) => (a.absen || 0) - (b.absen || 0));
+
+                // Sort fields: "absen" first, "nama" second, then others alphabetically
+                const sortedFields = Array.from(fields).sort((a, b) => {
+                    if (a === 'absen') return -1;
+                    if (b === 'absen') return 1;
+                    if (a === 'nama') return -1;
+                    if (b === 'nama') return 1;
+                    return a.localeCompare(b);
+                });
+
+                // Build table headers
+                const headerRow1 = document.createElement('tr');
+                const headerRow2 = document.createElement('tr');
+
+                headerRow1.innerHTML = `<th rowspan="2">Absen</th>`;
+                headerRow1.innerHTML += `<th rowspan="2">Nama Siswa</th>`;
+                headerRow1.innerHTML += `<th colspan="${sortedFields.length - 2}">Nilai Kegiatan Belajar Mengajar</th>`;
+                headerRow1.innerHTML += `<th rowspan="2">Rata-rata</th>`;
+
+                sortedFields.forEach((field) => {
+                    if (field !== 'absen' && field !== 'nama') {
+                        const th = document.createElement('th');
+                        th.textContent = field;
+                        headerRow2.appendChild(th);
+
+                        // Populate materi dropdown
+                        const materiOption = document.createElement("option");
+                        materiOption.value = field;
+                        materiOption.textContent = field;
+                        materiSelect.appendChild(materiOption);
+                    }
+                });
+
+                tableHead.appendChild(headerRow1);
+                tableHead.appendChild(headerRow2);
+
+                // Populate table rows
+                rows.forEach((row) => {
+                    const tableRow = document.createElement('tr');
+                    if (row.hidden) {
+                        tableRow.style.display = 'none'; // Hide the 'setting' row
+                    }
+
+                    let total = 0;
+                    let count = 0;
+
+                    tableRow.innerHTML += `<td>${row.absen || '-'}</td>`;
+                    tableRow.innerHTML += `<td>${row.nama || '-'}</td>`;
+
+                    sortedFields.forEach((field) => {
+                        if (field !== 'absen' && field !== 'nama') {
+                            const value = row[field] || 0;
+                            tableRow.innerHTML += `<td>${value}</td>`;
+                            if (!isNaN(value)) {
+                                total += parseFloat(value);
+                                count++;
+                            }
+                        }
+                    });
+
+                    const average = count > 0 ? (total / count).toFixed(2) : '-';
+                    tableRow.innerHTML += `<td>${average}</td>`;
+
+                    tableBody.appendChild(tableRow);
+                });
+            } catch (error) {
+                console.error("Error fetching data: ", error);
+                alert("Error fetching data: " + error.message);
+            }
+        }
+
+        // Initialize with the default class (rpl1)
+        fetchKelasData('rpl1');
+        // modal
+
+        document.getElementById('addFieldForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fieldName = document.getElementById('fieldName').value;
+            const fieldType = document.getElementById('fieldType').value;
+            const selectedCollection = document.getElementById('collectionSelect').value;
+
+            if (fieldName.trim() === "") {
+                alert("Field name cannot be empty!");
+                return;
+            }
+
+            const fieldValue = fieldType === "number" ? 0 : "";
+
+            try {
+                // Get a reference to the selected collection's 'setting' document
+                const settingDocRef = doc(db, selectedCollection, "setting");
+
+                // Fetch the current 'setting' document
+                const settingDoc = await getDoc(settingDocRef);
+
+                if (settingDoc.exists()) {
+                    // Get the current data and update it with the new field
+                    const currentData = settingDoc.data();
+                    currentData[fieldName] = fieldValue;
+
+                    // Update the document with the new field
+                    await updateDoc(settingDocRef, currentData);
+
+                    alert(`Field "${fieldName}" added successfully as a ${fieldType} to ${selectedCollection}/setting`);
+                    document.getElementById('addFieldForm').reset(); // Clear the form
+                } else {
+                    console.error("No 'setting' document found in the selected collection!");
+                    alert(`No 'setting' document found in the ${selectedCollection} collection.`);
+                }
+            } catch (error) {
+                console.error("Error adding field: ", error);
+                alert("Error adding field: " + error.message);
+            }
+        });
+        document.querySelector('.logout').addEventListener('click', function () {
+            // Redirect to logout.html
+            window.location.href = 'logout.html';
+        });  
+    </script>
+</body>
+</html>

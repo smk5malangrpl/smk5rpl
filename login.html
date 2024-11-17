@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Form</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="icon" href="gambar/smk.jpg">
+  <style>
+    /* Styling halaman dan gradasi background */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #2c3e50, #3498db);
+    }
+
+    /* Styling form login */
+    .login-container {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      color: #fff;
+    }
+
+    .login-container h2 {
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .input-group input {
+      width: 90%;
+      padding: 1rem;
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    /* Animasi placeholder */
+    .input-group input:focus + label,
+    .input-group input:valid + label {
+      top: -14px;
+      font-size: 0.8rem;
+      color: #3498db;
+    }
+
+    .input-group label {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #ccc;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    /* Ikon mata untuk show/hide password */
+    .input-group .show-hide {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #ccc;
+    }
+
+    /* Tombol login */
+    .login-button {
+      width: 100%;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 5px;
+      background-color: #3498db;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .login-button:hover {
+      background-color: #2980b9;
+    }
+
+    /* Efek animasi */
+    .login-container:hover {
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <div class="input-group">
+        <input type="text" id="username" name="username" required>
+        <label for="username">Username</label>
+      </div>
+      <div class="input-group">
+        <input type="password" id="password" name="password" required>
+        <label for="password">Password</label>
+        <i id="show-hide" class="fas fa-eye-slash show-hide"></i>
+      </div>
+      <button type="submit" class="login-button">Login</button>
+    </form>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.js"></script>
+
+  <!-- Firebase imports -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    
+
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZyzRXHQfOI3EbaR4yfdj-04GXDO7JCz8",
+      authDomain: "smk5-799f7.firebaseapp.com",
+      projectId: "smk5-799f7",
+      storageBucket: "smk5-799f7.firebasestorage.app",
+      messagingSenderId: "239466826709",
+      appId: "1:239466826709:web:a9792827d66b307d33cb5c",
+      measurementId: "G-NG0VY1XL4B"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Show/Hide Password
+    const showHide = document.getElementById('show-hide');
+    const passwordInput = document.getElementById('password');
+    showHide.addEventListener('click', function () {
+      showHide.classList.toggle('show');
+      if (showHide.classList.contains('show')) {
+        showHide.classList.remove('fa-eye-slash');
+        showHide.classList.add('fa-eye');
+        passwordInput.setAttribute('type', 'text');
+      } else {
+        showHide.classList.add('fa-eye-slash');
+        showHide.classList.remove('fa-eye');
+        passwordInput.setAttribute('type', 'password');
+      }
+    });
+
+    // Handle form submission
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();  // Prevent the default form submission behavior
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      // MD5 encryption using the correct method
+      const encryptedPassword = CryptoJS.MD5(password).toString();
+
+      // Check user in Firestore for both 'admin' and 'user' documents inside the 'user' collection
+      try {
+        const userDocRefAdmin = doc(db, 'user', 'admin');  // 'user' collection, 'admin' document
+        const userDocRefUser = doc(db, 'user', 'user');    // 'user' collection, 'user' document
+
+        const docAdmin = await getDoc(userDocRefAdmin);
+        const docUser = await getDoc(userDocRefUser);
+
+        let isAuthenticated = false;
+        let role = '';
+
+        // Check if username and password match in admin or user document
+        if (docAdmin.exists() && docAdmin.data().user === username && docAdmin.data().password === encryptedPassword) {
+          isAuthenticated = true;
+          alert ("Selamat datang guru")
+          role = 'admin';
+        } else if (docUser.exists() && docUser.data().user === username && docUser.data().password === encryptedPassword) {
+          isAuthenticated = true;
+          alert ("Selemat datang user")
+          role = 'user';
+        }
+
+        if (isAuthenticated) {
+          sessionStorage.setItem('role', role);
+          if (role === 'admin') {
+            window.location.href = 'materi.html';
+          } else {
+            window.location.href = 'materisiswa.html';
+          }
+        } else {
+          alert('Invalid username or password');
+        }
+      } catch (error) {
+        console.error('Error getting user document:', error);
+        alert('An error occurred. Please try again later.');
+      }
+    });
+  </script>
+
+</body>
+</html>
