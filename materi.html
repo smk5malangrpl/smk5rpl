@@ -136,6 +136,7 @@
                 <label for="namaSiswaSelect">Pilih Siswa:</label>
                 <select id="namaSiswaSelect"></select>
 
+
                 <label for="materiSelect">Pilih Materi:</label>
                 <select id="materiSelect"></select>
 
@@ -143,6 +144,12 @@
                 <input type="number" id="nilaiInput" step="any">
 
                 <button type="button" id="saveButton">Simpan Nilai</button>
+            </form>
+            <form>
+                <label for="ddd">Pilih Siswa:</label>
+                <select id="ddd"></select>
+
+                <button type="button" id="search">Simpan Nilai</button>
             </form>
         </div>
     </div>
@@ -191,14 +198,56 @@
         const tableBody = document.getElementById('tableBody');
         const kelasSelect = document.getElementById('kelasSelect');
         const namaSiswaSelect = document.getElementById('namaSiswaSelect');
+        const die = document.getElementById('ddd');
+ // Get the selected option
         const materiSelect = document.getElementById('materiSelect');
         const nilaiInput = document.getElementById('nilaiInput');
         const saveButton = document.getElementById('saveButton');
+        const searchButton = document.getElementById('search');
 
-        kelasSelect.addEventListener('change', () => {
-            fetchKelasData(kelasSelect.value);
+            // Assuming the dropdown for selecting a student now contains names
+            let lastHighlightedRow = null; // Variable to keep track of the last highlighted row
+
+            searchButton.addEventListener('click', function() {
+                const ddd = die.options[die.selectedIndex];
+                const selectedStudentName = ddd.text; // Get the selected student name from the dropdown
+                console.log("Selected Student Name:", selectedStudentName); // Log the selected student name for debugging
+
+                const rows = tableBody.getElementsByTagName('tr'); // Get all table rows
+                let found = false; // Variable to track if a match is found
+
+                // Reset the color of the last highlighted row if it exists
+                if (lastHighlightedRow) {
+                    lastHighlightedRow.style.backgroundColor = ''; // Reset to default color
+                }
+
+                // Loop through the rows to find the one that matches the selected student name
+                for (let row of rows) {
+                    const studentNameCell = row.cells[1]; // Assuming the second cell contains the student name
+                    
+                    if (studentNameCell && studentNameCell.textContent.trim() === selectedStudentName.trim()) {
+                        // If the row matches the selected student, highlight it or perform any action
+                        row.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Scroll to the row
+                        row.style.backgroundColor = 'yellow'; // Highlight the row
+                        lastHighlightedRow = row; // Update the last highlighted row
+                        found = true; // Set found to true
+                        break; // Exit the loop once the row is found
+                    }
+                }
+
+                if (!found) {
+                    alert("Student not found in the table."); // Alert if no matching student is found
+                }
+            });
+
+        kelasSelect.addEventListener('change', async () => {
+            // Clear existing options in the dropdown
+            ddd.innerHTML = ''; // Clear the dropdown for student names
+            namaSiswaSelect.innerHTML = ''; // Clear the dropdown for student names in the input form
+
+            // Fetch and refresh the data for the selected class
+            await fetchKelasData(kelasSelect.value);
         });
-
         saveButton.addEventListener('click', async () => {
             const selectedStudent = namaSiswaSelect.value;
             const selectedMateri = materiSelect.value;
@@ -251,10 +300,15 @@
 
                     // Skip 'setting' document from being added to namaSiswaSelect
                     if (doc.id !== 'setting') {
-                        const option = document.createElement("option");
-                        option.value = doc.id;
-                        option.textContent = data.nama || `Unknown (${doc.id})`;
-                        namaSiswaSelect.appendChild(option);
+                        const optionForNamaSiswa = document.createElement("option");
+                        optionForNamaSiswa.value = doc.id;
+                        optionForNamaSiswa.textContent = data.nama || `Unknown (${doc.id})`;
+                        namaSiswaSelect.appendChild(optionForNamaSiswa);
+                        
+                        const optionForDdd = document.createElement("option");
+                        optionForDdd.value = doc.id;
+                        optionForDdd.textContent = data.nama || `Unknown (${doc.id})`;
+                        ddd.appendChild(optionForDdd);
                     }
                 });
 
@@ -334,6 +388,7 @@
         // Initialize with the default class (rpl1)
         fetchKelasData('rpl1');
         // modal
+        
 
         document.getElementById('addFieldForm').addEventListener('submit', async (e) => {
             e.preventDefault();
